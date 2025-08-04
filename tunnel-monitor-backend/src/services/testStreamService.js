@@ -40,9 +40,20 @@ class TestStreamService {
       
       // Initialize browser
       sendLog('info', 'Initialisation du navigateur Chromium...');
+      
+      // Set Playwright cache directory for Render
+      if (process.env.NODE_ENV === 'production') {
+        process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/render/.cache/ms-playwright';
+      }
+      
       browser = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
       });
 
       const context = await browser.newContext({
