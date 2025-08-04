@@ -120,7 +120,7 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tunnel.lastCheck
+                  {tunnel.lastCheck && tunnel.lastCheck !== 'null'
                     ? format(new Date(tunnel.lastCheck), 'dd MMM à HH:mm', { locale: fr })
                     : 'Jamais'}
                 </td>
@@ -208,7 +208,9 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
                               {test.status}
                             </span>
                             <span className="text-sm text-gray-600">
-                              {format(new Date(test.createdTime), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                              {test.createdTime && test.createdTime !== 'null' 
+                                ? format(new Date(test.createdTime), 'dd MMM yyyy à HH:mm', { locale: fr })
+                                : 'Date inconnue'}
                             </span>
                           </div>
                           

@@ -43,7 +43,12 @@
       "mcp__vercel__vercel-list-projects",
       "mcp__vercel__vercel-create-project",
       "Bash(VERCEL_TOKEN=aeqwCxVHqgdZJVfArE4tMyi0 npx vercel --yes --name tunnel-monitor)",
-      "mcp__vercel__vercel-create-deployment"
+      "mcp__vercel__vercel-create-deployment",
+      "mcp__vercel__vercel-create-environment-variables",
+      "mcp__vercel__vercel-get-deployment",
+      "WebFetch(domain:render.com)",
+      "Bash(true)",
+      "mcp__vercel__vercel-list-all-deployments"
     ],
     "deny": []
   }
