@@ -156,12 +156,22 @@ export default function TestDetails({ test, onClose }: TestDetailsProps) {
                     {test.formsOk ? '✓' : '✗'}
                   </div>
                   <div className="text-sm text-gray-600">Formulaires</div>
+                  {test.details?.formTest && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {test.details.formFunctional ? '✅ Testé' : '⚠️ Non testé'}
+                    </div>
+                  )}
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <div className={`text-2xl mb-2 ${test.ctaOk ? 'text-green-600' : 'text-red-600'}`}>
                     {test.ctaOk ? '✓' : '✗'}
                   </div>
                   <div className="text-sm text-gray-600">CTAs</div>
+                  {test.details?.ctaTest && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {test.details.ctaTest.clickable}/{test.details.ctaTest.tested} cliquables
+                    </div>
+                  )}
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg border">
                   <div className="text-2xl font-bold text-gray-900 mb-2">
@@ -176,6 +186,42 @@ export default function TestDetails({ test, onClose }: TestDetailsProps) {
                   <div className="text-sm text-gray-600">Images manquantes</div>
                 </div>
               </div>
+
+              {/* Form Test Details */}
+              {test.details?.formTest && test.details.formTest.tested && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Test de formulaire</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>✅ Champs remplis : {test.details.formTest.fields.join(', ')}</p>
+                    {test.details.formSubmitAttempted && (
+                      <p>✅ Tentative de soumission interceptée avec succès</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Test Details */}
+              {test.details?.ctaTest && test.details.ctaTest.tested > 0 && (
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h4 className="font-medium text-green-900 mb-2">Test des CTAs</h4>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <p>📊 {test.details.ctaTest.tested} CTA(s) testé(s)</p>
+                    <p>✅ {test.details.ctaTest.clickable} CTA(s) cliquable(s)</p>
+                    {test.details.ctaTest.destinations && test.details.ctaTest.destinations.length > 0 && (
+                      <div className="mt-2">
+                        <p className="font-medium">Destinations détectées :</p>
+                        <ul className="list-disc list-inside ml-2">
+                          {test.details.ctaTest.destinations.map((dest: any, idx: number) => (
+                            <li key={idx} className="truncate">
+                              {dest.text}: {dest.url}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Errors & Warnings */}
               {(test.errors || test.warnings) && (

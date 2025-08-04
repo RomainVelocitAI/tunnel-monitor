@@ -150,11 +150,166 @@ class TunnelTester {
                           (formData.inputsCount > 0 && formData.submitButtonsCount > 0);
       results.elements.forms = formData.formsCount;
 
-      // Check for CTAs
-      const ctaButtons = await page.$$('button, a.btn, a.button, [class*="cta"]');
+      // Test forms functionality
+      if (results.formsValid) {
+        try {
+          logger.info('Testing form functionality...');
+          
+          // Trouver un formulaire de contact ou le premier formulaire disponible
+          const formTest = await page.evaluate(() => {
+            const forms = document.querySelectorAll('form');
+            const emailInputs = document.querySelectorAll('input[type="email"]');
+            const textInputs = document.querySelectorAll('input[type="text"], input[name*="name"], input[placeholder*="nom"]');
+            const messageInputs = document.querySelectorAll('textarea, input[name*="message"]');
+            
+            const testData = {
+              tested: false,
+              submitted: false,
+              fields: []
+            };
+            
+            // Remplir les champs trouvés
+            if (emailInputs.length > 0) {
+              emailInputs[0].value = 'test@tunnelmonitor.com';
+              emailInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+              testData.fields.push('email');
+              testData.tested = true;
+            }
+            
+            if (textInputs.length > 0) {
+              textInputs[0].value = 'Test Tunnel Monitor';
+              textInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+              testData.fields.push('name');
+              testData.tested = true;
+            }
+            
+            if (messageInputs.length > 0) {
+              messageInputs[0].value = 'Ceci est un test automatique du système Tunnel Monitor. Veuillez ignorer ce message.';
+              messageInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+              testData.fields.push('message');
+              testData.tested = true;
+            }
+            
+            return testData;
+          });
+          
+          results.details.formTest = formTest;
+          
+          // Tenter de soumettre le formulaire (mais l'intercepter)
+          if (formTest.tested) {
+            // Intercepter la soumission pour ne pas vraiment envoyer
+            await page.evaluate(() => {
+              const forms = document.querySelectorAll('form');
+              if (forms.length > 0) {
+                forms[0].addEventListener('submit', (e) => {
+                  e.preventDefault();
+                  window.__formSubmitIntercepted = true;
+                });
+              }
+            });
+            
+            // Chercher et cliquer sur le bouton submit
+            const submitButton = await page.$('button[type="submit"], input[type="submit"], button:has-text("Envoyer"), button:has-text("Submit"), button:has-text("Soumettre")');
+            if (submitButton) {
+              await submitButton.click();
+              await page.waitForTimeout(1000);
+              
+              // Vérifier si le formulaire a tenté de se soumettre
+              const wasIntercepted = await page.evaluate(() => window.__formSubmitIntercepted);
+              results.details.formSubmitAttempted = wasIntercepted || false;
+            }
+          }
+          
+          results.details.formFunctional = formTest.tested;
+          if (!formTest.tested) {
+            results.warnings.push({
+              type: 'form',
+              message: 'Impossible de tester le formulaire automatiquement'
+            });
+          }
+          
+        } catch (error) {
+          logger.error('Error testing form:', error);
+          results.warnings.push({
+            type: 'form',
+            message: 'Erreur lors du test du formulaire'
+          });
+        }
+      }
+
+      // Check and test CTAs
+      const ctaButtons = await page.$$('button, a.btn, a.button, [class*="cta"], a[href*="contact"], a[href*="devis"], a[href*="demo"]');
       results.details.ctaCount = ctaButtons.length;
       results.ctasValid = ctaButtons.length > 0;
       results.elements.ctas = ctaButtons.length;
+      
+      // Test CTA functionality
+      if (results.ctasValid && ctaButtons.length > 0) {
+        try {
+          logger.info('Testing CTA functionality...');
+          
+          const ctaTest = {
+            tested: 0,
+            clickable: 0,
+            destinations: []
+          };
+          
+          // Tester les 3 premiers CTAs maximum
+          const ctasToTest = Math.min(3, ctaButtons.length);
+          
+          for (let i = 0; i < ctasToTest; i++) {
+            try {
+              const cta = ctaButtons[i];
+              
+              // Obtenir les infos du CTA
+              const ctaInfo = await cta.evaluate(el => ({
+                text: el.textContent?.trim(),
+                href: el.href || null,
+                type: el.tagName.toLowerCase(),
+                isButton: el.tagName === 'BUTTON',
+                hasOnClick: !!el.onclick || el.hasAttribute('onclick')
+              }));
+              
+              ctaTest.tested++;
+              
+              // Vérifier si le CTA est cliquable
+              const isClickable = await cta.isEnabled();
+              if (isClickable) {
+                ctaTest.clickable++;
+                
+                // Pour les liens, vérifier la destination
+                if (ctaInfo.href && !ctaInfo.href.startsWith('javascript:')) {
+                  ctaTest.destinations.push({
+                    text: ctaInfo.text,
+                    url: ctaInfo.href,
+                    valid: true
+                  });
+                }
+              }
+              
+            } catch (error) {
+              logger.warn('Error testing individual CTA:', error);
+            }
+          }
+          
+          results.details.ctaTest = ctaTest;
+          results.details.ctaFunctional = ctaTest.clickable > 0;
+          
+          if (ctaTest.clickable === 0) {
+            results.warnings.push({
+              type: 'cta',
+              message: 'Aucun CTA cliquable trouvé'
+            });
+          }
+          
+        } catch (error) {
+          logger.error('Error testing CTAs:', error);
+          results.warnings.push({
+            type: 'cta',
+            message: 'Erreur lors du test des CTAs'
+          });
+        }
+      }
 
       // Check tracking pixels
       const hasTracking = await page.evaluate(() => {
