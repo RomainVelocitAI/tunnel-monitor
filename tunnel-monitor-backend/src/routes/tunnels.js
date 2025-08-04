@@ -3,6 +3,7 @@ const router = express.Router();
 const airtableService = require('../services/airtableService');
 const monitoringService = require('../services/monitoringService');
 const testStreamService = require('../services/testStreamService');
+const testStreamServicePuppeteer = require('../services/testStreamServicePuppeteer');
 const logger = require('../utils/logger');
 
 // Get all tunnels
@@ -70,22 +71,55 @@ router.get('/:id/test-stream', async (req, res) => {
     message: 'Connexion établie avec le serveur' 
   })}\n\n`);
 
-  // Use the test stream service to run the real test with Playwright
+  // Try Playwright first, fallback to Puppeteer if it fails
+  let testCompleted = false;
+  
   try {
+    // Try Playwright first
     await testStreamService.streamTest(id, res);
-  } catch (error) {
-    logger.error('SSE test stream error:', error);
-    res.write(`data: ${JSON.stringify({ 
-      type: 'log',
-      level: 'error',
-      message: `Erreur: ${error.message}`
-    })}\n\n`);
-    res.write(`data: ${JSON.stringify({ 
-      type: 'complete', 
-      status: 'error' 
-    })}\n\n`);
+    testCompleted = true;
+  } catch (playwrightError) {
+    logger.warn('Playwright test failed, trying Puppeteer:', playwrightError.message);
+    
+    // If Playwright fails, try Puppeteer
+    if (!testCompleted && playwrightError.message.includes('Executable doesn\'t exist')) {
+      res.write(`data: ${JSON.stringify({ 
+        type: 'log',
+        level: 'warning',
+        message: 'Playwright non disponible, utilisation de Puppeteer...'
+      })}\n\n`);
+      
+      try {
+        await testStreamServicePuppeteer.streamTest(id, res);
+        testCompleted = true;
+      } catch (puppeteerError) {
+        logger.error('Puppeteer test also failed:', puppeteerError);
+        res.write(`data: ${JSON.stringify({ 
+          type: 'log',
+          level: 'error',
+          message: `Erreur: ${puppeteerError.message}`
+        })}\n\n`);
+        res.write(`data: ${JSON.stringify({ 
+          type: 'complete', 
+          status: 'error' 
+        })}\n\n`);
+      }
+    } else {
+      // Other Playwright errors
+      res.write(`data: ${JSON.stringify({ 
+        type: 'log',
+        level: 'error',
+        message: `Erreur: ${playwrightError.message}`
+      })}\n\n`);
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        status: 'error' 
+      })}\n\n`);
+    }
   } finally {
-    res.end();
+    if (!res.writableEnded) {
+      res.end();
+    }
   }
 });
 
