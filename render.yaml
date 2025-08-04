@@ -1,12 +1,11 @@
 services:
   - type: web
     name: tunnel-monitor-api
-    runtime: node
+    runtime: docker
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
     rootDir: tunnel-monitor-backend
-    buildCommand: npm install && npx playwright install --with-deps chromium
-    startCommand: npm start
+    dockerfilePath: ./tunnel-monitor-backend/Dockerfile.render
     envVars:
       - key: NODE_ENV
         value: production

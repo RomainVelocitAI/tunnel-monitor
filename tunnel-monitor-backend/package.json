@@ -9,8 +9,8 @@
     "dev": "nodemon src/index.js",
     "test": "jest",
     "test:tunnel": "node src/scripts/testTunnel.js",
-    "postinstall": "npx playwright install --with-deps chromium",
-    "build": "npx playwright install --with-deps chromium && echo 'Build complete'"
+    "postinstall": "npx playwright install chromium",
+    "build": "echo 'Build complete'"
   },
   "engines": {
     "node": ">=18.0.0"

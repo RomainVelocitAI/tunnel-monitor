@@ -41,20 +41,41 @@ class TestStreamService {
       // Initialize browser
       sendLog('info', 'Initialisation du navigateur Chromium...');
       
-      // Set Playwright cache directory for Render
-      if (process.env.NODE_ENV === 'production') {
-        process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/render/.cache/ms-playwright';
-      }
-      
-      browser = await chromium.launch({
+      const launchOptions = {
         headless: true,
         args: [
           '--no-sandbox', 
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins',
+          '--disable-site-isolation-trials'
         ]
-      });
+      };
+      
+      // Try to use system Chrome if available on Render
+      if (process.env.NODE_ENV === 'production') {
+        // Check for Chrome path from environment variable first
+        if (process.env.CHROME_PATH) {
+          launchOptions.executablePath = process.env.CHROME_PATH;
+          sendLog('info', `Utilisation de Chrome depuis CHROME_PATH: ${process.env.CHROME_PATH}`);
+        } else {
+          try {
+            // Try to find Chrome executable
+            const { execSync } = require('child_process');
+            const chromePath = execSync('which chromium-browser || which chromium || which google-chrome-stable || which google-chrome || which chrome', { encoding: 'utf8' }).trim();
+            if (chromePath) {
+              launchOptions.executablePath = chromePath;
+              sendLog('info', `Utilisation de Chrome système: ${chromePath}`);
+            }
+          } catch (e) {
+            sendLog('warning', 'Chrome système non trouvé, utilisation de Playwright Chrome');
+          }
+        }
+      }
+      
+      browser = await chromium.launch(launchOptions);
 
       const context = await browser.newContext({
         viewport: { width: 1920, height: 1080 },
