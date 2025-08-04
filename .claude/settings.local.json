@@ -48,7 +48,8 @@
       "mcp__vercel__vercel-get-deployment",
       "WebFetch(domain:render.com)",
       "Bash(true)",
-      "mcp__vercel__vercel-list-all-deployments"
+      "mcp__vercel__vercel-list-all-deployments",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }
