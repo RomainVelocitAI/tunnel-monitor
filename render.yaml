@@ -5,7 +5,7 @@ services:
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
     rootDir: tunnel-monitor-backend
-    dockerfilePath: ./tunnel-monitor-backend/Dockerfile.render
+    dockerfilePath: ./Dockerfile.render
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,3 +29,5 @@ services:
         value: "30000"
       - key: LOG_LEVEL
         value: info
+      - key: CHROME_PATH
+        value: /usr/bin/google-chrome-stable
