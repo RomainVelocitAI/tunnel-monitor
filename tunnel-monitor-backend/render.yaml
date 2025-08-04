@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: tunnel-monitor-api
+    runtime: node
+    repo: https://github.com/yourusername/tunnel-monitor-backend
+    branch: main
+    rootDir: .
+    buildCommand: npm install && npx playwright install chromium
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: FRONTEND_URL
+        sync: false
+      - key: AIRTABLE_API_KEY
+        sync: false
+      - key: AIRTABLE_BASE_ID
+        sync: false
+      - key: AIRTABLE_TABLE_NAME
+        value: URL_A_SURVEILLER
+      - key: AIRTABLE_HISTORY_TABLE
+        value: Historique_Tests_Tunnels
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: N8N_WEBHOOK_KEY
+        sync: false
+      - key: ENABLE_MONITORING
+        value: true
+      - key: MONITORING_INTERVAL
+        value: "0 8 * * *"
+      - key: TEST_TIMEOUT
+        value: 30000
+      - key: LOG_LEVEL
+        value: info
