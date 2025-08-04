@@ -44,7 +44,7 @@ export default function TestProgressModal({ isOpen, onClose, tunnelName, tunnelI
 
     // Connect to SSE endpoint for real-time logs
     const eventSource = new EventSource(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/tunnels/${tunnelId}/test-stream`
+      `${process.env.NEXT_PUBLIC_API_URL}/tunnels/${tunnelId}/test-stream`
     )
 
     eventSource.onmessage = (event) => {
