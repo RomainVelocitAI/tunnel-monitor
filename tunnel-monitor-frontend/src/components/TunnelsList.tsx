@@ -7,6 +7,7 @@ import { tunnelApi } from '@/lib/api'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import TestDetails from './TestDetails'
+import TestProgressModal from './TestProgressModal'
 
 interface Tunnel {
   id: string
@@ -28,6 +29,7 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
   const [selectedTunnel, setSelectedTunnel] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState<string | null>(null)
   const [selectedTest, setSelectedTest] = useState<any>(null)
+  const [testingTunnel, setTestingTunnel] = useState<{ id: string; name: string } | null>(null)
 
   // Fetch history when a tunnel is selected
   const { data: history, isLoading: historyLoading } = useQuery({
@@ -39,12 +41,18 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
   const testMutation = useMutation({
     mutationFn: (tunnelId: string) => tunnelApi.testTunnel(tunnelId),
     onSuccess: () => {
-      alert('Test lancé avec succès')
+      // Le modal de progression gère l'affichage du succès
     },
     onError: () => {
       alert('Erreur lors du lancement du test')
+      setTestingTunnel(null)
     }
   })
+
+  const handleStartTest = (tunnel: Tunnel) => {
+    setTestingTunnel({ id: tunnel.id, name: tunnel.name })
+    testMutation.mutate(tunnel.id)
+  }
 
   const getStatusClass = (status: string) => {
     switch (status) {
@@ -127,7 +135,7 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => testMutation.mutate(tunnel.id)}
+                      onClick={() => handleStartTest(tunnel)}
                       disabled={testMutation.isPending}
                       className="text-primary-600 hover:text-primary-900"
                       title="Lancer un test"
@@ -266,6 +274,16 @@ export default function TunnelsList({ tunnels }: TunnelsListProps) {
         <TestDetails 
           test={selectedTest} 
           onClose={() => setSelectedTest(null)} 
+        />
+      )}
+
+      {/* Modal de progression du test */}
+      {testingTunnel && (
+        <TestProgressModal
+          isOpen={!!testingTunnel}
+          onClose={() => setTestingTunnel(null)}
+          tunnelName={testingTunnel.name}
+          tunnelId={testingTunnel.id}
         />
       )}
     </div>
