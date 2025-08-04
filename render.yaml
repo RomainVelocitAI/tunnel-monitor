@@ -4,7 +4,7 @@ services:
     runtime: node
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
-    rootDir: .
+    rootDir: tunnel-monitor-backend
     buildCommand: npm install && npx playwright install chromium
     startCommand: npm start
     envVars:
@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 3001
       - key: FRONTEND_URL
-        sync: false
+        value: https://tunnel-monitor.vercel.app
       - key: AIRTABLE_API_KEY
         sync: false
       - key: AIRTABLE_BASE_ID
@@ -22,15 +22,11 @@ services:
         value: URL_A_SURVEILLER
       - key: AIRTABLE_HISTORY_TABLE
         value: Historique_Tests_Tunnels
-      - key: N8N_WEBHOOK_URL
-        sync: false
-      - key: N8N_WEBHOOK_KEY
-        sync: false
       - key: ENABLE_MONITORING
-        value: true
+        value: "true"
       - key: MONITORING_INTERVAL
         value: "0 8 * * *"
       - key: TEST_TIMEOUT
-        value: 30000
+        value: "30000"
       - key: LOG_LEVEL
         value: info
