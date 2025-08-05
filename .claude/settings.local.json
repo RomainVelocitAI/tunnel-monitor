@@ -55,7 +55,9 @@
       "Bash(mkdir:*)",
       "Bash(git rm:*)",
       "mcp__github__create_or_update_file",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }
