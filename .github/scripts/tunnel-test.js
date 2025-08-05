@@ -148,7 +148,9 @@ async function runTest() {
       const contactForms = Array.from(document.querySelectorAll('*')).filter(el => {
         const text = el.textContent || '';
         const className = el.className || '';
-        return (text.toLowerCase().includes('contact') || className.toLowerCase().includes('contact')) && 
+        // Vérifier que className est une chaîne avant d'appeler toLowerCase
+        const classNameStr = typeof className === 'string' ? className : '';
+        return (text.toLowerCase().includes('contact') || classNameStr.toLowerCase().includes('contact')) && 
                el.querySelector('input, textarea');
       });
       

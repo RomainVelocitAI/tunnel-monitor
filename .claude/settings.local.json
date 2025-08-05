@@ -65,7 +65,8 @@
       "mcp__airtable-mcp__search_records",
       "mcp__github__list_workflow_jobs",
       "mcp__vercel__vercel-get-environments",
-      "Bash(/var/www/Analyseur_de_site/check-backend-health.sh:*)"
+      "Bash(/var/www/Analyseur_de_site/check-backend-health.sh:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }
