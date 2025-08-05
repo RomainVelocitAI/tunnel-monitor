@@ -70,7 +70,19 @@ async function runTest() {
     
     const loadTime = Date.now() - startTime;
     results.loadTime = loadTime;
-    results.performanceScore = Math.max(0, Math.floor(100 - (loadTime / 100)));
+    
+    // Calculate performance score (better formula)
+    if (loadTime < 1000) {
+      results.performanceScore = 100;
+    } else if (loadTime < 3000) {
+      results.performanceScore = 90;
+    } else if (loadTime < 5000) {
+      results.performanceScore = 70;
+    } else if (loadTime < 8000) {
+      results.performanceScore = 50;
+    } else {
+      results.performanceScore = Math.max(0, 30 - Math.floor((loadTime - 8000) / 1000));
+    }
     
     if (response.ok()) {
       results.status = 'success';
@@ -88,43 +100,70 @@ async function runTest() {
       };
     });
     
-    // Wait 2 seconds for forms to load
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait for dynamic content to load
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Check forms
+    // Check forms with better selectors
     const formData = await page.evaluate(() => {
       const forms = document.querySelectorAll('form');
-      const emailInputs = document.querySelectorAll('input[type="email"]');
-      const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"]');
+      const emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
+      const textInputs = document.querySelectorAll('input[type="text"], input[name*="name"], input[name*="nom"], input[placeholder*="nom"]');
+      const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], button[class*="submit"], button[class*="send"]');
+      
+      // Look for contact forms specifically
+      const contactForms = Array.from(document.querySelectorAll('*')).filter(el => {
+        const text = el.textContent || '';
+        const className = el.className || '';
+        return (text.toLowerCase().includes('contact') || className.toLowerCase().includes('contact')) && 
+               el.querySelector('input, textarea');
+      });
       
       return {
         formsCount: forms.length,
         emailInputsCount: emailInputs.length,
-        submitButtonsCount: submitButtons.length
+        textInputsCount: textInputs.length,
+        submitButtonsCount: submitButtons.length,
+        contactFormsCount: contactForms.length,
+        hasInputFields: emailInputs.length > 0 || textInputs.length > 0
       };
     });
     
-    results.formsValid = formData.formsCount > 0;
-    results.details.formsCount = formData.formsCount;
+    results.formsValid = formData.formsCount > 0 || formData.hasInputFields;
+    results.details.forms = formData;
     
-    // Test form functionality
-    if (formData.formsCount > 0) {
+    // Test form functionality if forms exist
+    if (formData.hasInputFields) {
       const formTest = await page.evaluate(() => {
-        const emailInput = document.querySelector('input[type="email"]');
-        const nameInput = document.querySelector('input[type="text"], input[name*="name"]');
         const results = [];
         
-        if (emailInput) {
-          emailInput.value = 'test@tunnelmonitor.com';
-          emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-          results.push('Email filled');
-        }
+        // Try to fill email inputs
+        const emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
+        emailInputs.forEach((input, index) => {
+          input.value = 'test@tunnelmonitor.com';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          results.push(`Email field ${index + 1} filled`);
+        });
         
-        if (nameInput) {
-          nameInput.value = 'Test Tunnel Monitor';
-          nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-          results.push('Name filled');
-        }
+        // Try to fill name inputs
+        const nameInputs = document.querySelectorAll('input[type="text"], input[name*="name"], input[name*="nom"], input[placeholder*="nom"]');
+        nameInputs.forEach((input, index) => {
+          if (!input.value) { // Don't overwrite if already has value
+            input.value = 'Test Tunnel Monitor';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            results.push(`Name field ${index + 1} filled`);
+          }
+        });
+        
+        // Try to fill message/textarea
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach((textarea, index) => {
+          textarea.value = 'Test message from Tunnel Monitor';
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          textarea.dispatchEvent(new Event('change', { bubbles: true }));
+          results.push(`Message field ${index + 1} filled`);
+        });
         
         return results;
       });
@@ -132,28 +171,52 @@ async function runTest() {
       results.details.formTests = formTest;
     }
     
-    // Check CTAs
-    const ctaButtons = await page.$$('button, a.btn, a.button, [class*="cta"]');
-    results.ctasValid = ctaButtons.length > 0;
-    results.details.ctaCount = ctaButtons.length;
+    // Check CTAs with improved selectors
+    const ctaData = await page.evaluate(() => {
+      // Look for buttons and links that look like CTAs
+      const buttons = document.querySelectorAll('button, input[type="button"], input[type="submit"]');
+      const ctaLinks = document.querySelectorAll('a[class*="btn"], a[class*="button"], a[class*="cta"], a[href*="contact"], a[href*="devis"]');
+      
+      // Find clickable elements with CTA-like text
+      const ctaTexts = ['contact', 'devis', 'appel', 'rdv', 'essai', 'demo', 'commencer', 'inscription'];
+      const textCTAs = Array.from(document.querySelectorAll('a, button')).filter(el => {
+        const text = el.textContent?.toLowerCase() || '';
+        return ctaTexts.some(cta => text.includes(cta));
+      });
+      
+      return {
+        buttonsCount: buttons.length,
+        ctaLinksCount: ctaLinks.length,
+        textCTAsCount: textCTAs.length,
+        total: buttons.length + ctaLinks.length
+      };
+    });
     
-    // Check tracking
+    results.ctasValid = ctaData.total > 0;
+    results.details.ctas = ctaData;
+    
+    // Check tracking pixels
     const hasTracking = await page.evaluate(() => {
       return {
         facebook: typeof window.fbq !== 'undefined',
         googleAnalytics: typeof window.ga !== 'undefined' || typeof window.gtag !== 'undefined',
-        googleTagManager: typeof window.dataLayer !== 'undefined'
+        googleTagManager: typeof window.dataLayer !== 'undefined' && Array.isArray(window.dataLayer),
+        googleAds: typeof window.google_trackConversion !== 'undefined',
+        linkedIn: typeof window._linkedin_data_partner_ids !== 'undefined'
       };
     });
     
     if (hasTracking.facebook) results.trackingPixels.push('Facebook Pixel');
     if (hasTracking.googleAnalytics) results.trackingPixels.push('Google Analytics');
     if (hasTracking.googleTagManager) results.trackingPixels.push('Google Tag Manager');
+    if (hasTracking.googleAds) results.trackingPixels.push('Google Ads');
+    if (hasTracking.linkedIn) results.trackingPixels.push('LinkedIn Insight');
     
-    // Screenshot
-    await page.screenshot({ path: `screenshot-${tunnelId}.png` });
+    // Take screenshot
+    await page.screenshot({ path: `screenshot-${tunnelId}.png`, fullPage: false });
     
     results.details.performance = metrics;
+    results.details.tracking = hasTracking;
     
   } catch (error) {
     console.error('Test error:', error);
