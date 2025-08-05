@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const airtableService = require('../services/airtableService');
 const monitoringService = require('../services/monitoringService');
-const testStreamServicePuppeteer = require('../services/testStreamServicePuppeteer');
+const githubActionsService = require('../services/githubActionsService');
 const logger = require('../utils/logger');
 
 // Get all tunnels
@@ -70,11 +70,59 @@ router.get('/:id/test-stream', async (req, res) => {
     message: 'Connexion établie avec le serveur' 
   })}\n\n`);
 
-  // Use Puppeteer directly
   try {
-    await testStreamServicePuppeteer.streamTest(id, res);
+    // Get tunnel info
+    const tunnels = await airtableService.getActiveTunnels();
+    const tunnel = tunnels.find(t => t.id === id);
+    
+    if (!tunnel) {
+      res.write(`data: ${JSON.stringify({ 
+        type: 'log',
+        level: 'error',
+        message: 'Tunnel non trouvé'
+      })}\n\n`);
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        status: 'error' 
+      })}\n\n`);
+      return;
+    }
+
+    // Register SSE connection for webhook callback
+    const webhooks = require('./webhooks');
+    webhooks.registerSSE(id, res);
+
+    // Trigger GitHub Actions
+    res.write(`data: ${JSON.stringify({ 
+      type: 'log', 
+      level: 'info', 
+      message: 'Démarrage du test via GitHub Actions...' 
+    })}\n\n`);
+    
+    res.write(`data: ${JSON.stringify({ 
+      type: 'log', 
+      level: 'info', 
+      message: `Tunnel: ${tunnel.name}` 
+    })}\n\n`);
+    
+    res.write(`data: ${JSON.stringify({ 
+      type: 'log', 
+      level: 'info', 
+      message: `URL: ${tunnel.url}` 
+    })}\n\n`);
+
+    await githubActionsService.triggerTest(id, tunnel.name, tunnel.url);
+    
+    res.write(`data: ${JSON.stringify({ 
+      type: 'log', 
+      level: 'success', 
+      message: 'Test déclenché avec succès, attente des résultats...' 
+    })}\n\n`);
+    
+    // The connection will stay open and receive results via webhook
+    
   } catch (error) {
-    logger.error('Test failed:', error);
+    logger.error('Failed to trigger test:', error);
     res.write(`data: ${JSON.stringify({ 
       type: 'log',
       level: 'error',
@@ -84,10 +132,7 @@ router.get('/:id/test-stream', async (req, res) => {
       type: 'complete', 
       status: 'error' 
     })}\n\n`);
-  } finally {
-    if (!res.writableEnded) {
-      res.end();
-    }
+    res.end();
   }
 });
 

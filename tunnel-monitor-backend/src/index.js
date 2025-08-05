@@ -11,6 +11,7 @@ const monitoringService = require('./services/monitoringService');
 const tunnelRoutes = require('./routes/tunnels');
 const dashboardRoutes = require('./routes/dashboard');
 const exportRoutes = require('./routes/export');
+const webhookRoutes = require('./routes/webhooks');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +50,7 @@ app.get('/health', (req, res) => {
 app.use('/api/tunnels', tunnelRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -51,7 +51,8 @@
       "mcp__vercel__vercel-list-all-deployments",
       "Bash(chmod:*)",
       "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

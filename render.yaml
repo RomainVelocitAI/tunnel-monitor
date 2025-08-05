@@ -1,12 +1,12 @@
 services:
   - type: web
     name: tunnel-monitor-api
-    runtime: docker
+    runtime: node
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
     rootDir: tunnel-monitor-backend
-    dockerfilePath: ./tunnel-monitor-backend/Dockerfile
-    dockerContext: ./tunnel-monitor-backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -30,5 +30,11 @@ services:
         value: "30000"
       - key: LOG_LEVEL
         value: info
-      - key: CHROME_PATH
-        value: /usr/bin/google-chrome-stable
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_OWNER
+        value: RomainVelocitAI
+      - key: GITHUB_REPO
+        value: tunnel-monitor
+      - key: BACKEND_URL
+        value: https://tunnel-monitor-api.onrender.com
