@@ -70,7 +70,7 @@ async function runTest() {
     
     const loadTime = Date.now() - startTime;
     results.loadTime = loadTime;
-    results.performanceScore = Math.floor(100 - (loadTime / 100));
+    results.performanceScore = Math.max(0, Math.floor(100 - (loadTime / 100)));
     
     if (response.ok()) {
       results.status = 'success';
@@ -88,8 +88,10 @@ async function runTest() {
       };
     });
     
+    // Wait 2 seconds for forms to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // Check forms
-    await page.waitForTimeout(2000);
     const formData = await page.evaluate(() => {
       const forms = document.querySelectorAll('form');
       const emailInputs = document.querySelectorAll('input[type="email"]');
