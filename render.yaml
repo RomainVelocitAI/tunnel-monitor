@@ -5,8 +5,8 @@ services:
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
     rootDir: tunnel-monitor-backend
-    buildCommand: npm install --production
-    startCommand: npm start
+    buildCommand: npm ci --omit=dev
+    startCommand: ./start.sh
     envVars:
       - key: NODE_ENV
         value: production
