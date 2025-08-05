@@ -213,7 +213,16 @@ async function runTest() {
         return results;
       });
       
+      console.log('Form test results:', formTest);
       results.details.formTests = formTest;
+      
+      // Prendre un screenshot après avoir rempli le formulaire
+      if (formTest.length > 0) {
+        console.log('Taking screenshot of filled form...');
+        const filledFormScreenshot = `screenshot-filled-${tunnelId}.png`;
+        await page.screenshot({ path: filledFormScreenshot, fullPage: false });
+        results.filledFormScreenshot = filledFormScreenshot;
+      }
     }
     
     // Check CTAs with improved selectors
@@ -239,6 +248,51 @@ async function runTest() {
     
     results.ctasValid = ctaData.total > 0;
     results.details.ctas = ctaData;
+    
+    // Test CTA functionality if CTAs exist
+    if (ctaData.total > 0) {
+      console.log('Testing CTA clicks...');
+      const ctaTests = await page.evaluate(() => {
+        const results = [];
+        const clickedUrls = [];
+        
+        // Test button CTAs
+        const buttons = document.querySelectorAll('button:not([type="submit"]), input[type="button"]');
+        buttons.forEach((button, index) => {
+          if (index < 3) { // Test max 3 buttons
+            try {
+              const text = button.textContent || button.value || 'Unknown';
+              // Simuler le hover
+              button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+              results.push(`Button "${text.substring(0, 30)}..." hovered`);
+            } catch (e) {
+              results.push(`Button ${index + 1} hover failed: ${e.message}`);
+            }
+          }
+        });
+        
+        // Test link CTAs
+        const ctaLinks = document.querySelectorAll('a[class*="btn"], a[class*="button"], a[class*="cta"]');
+        ctaLinks.forEach((link, index) => {
+          if (index < 3) { // Test max 3 links
+            try {
+              const href = link.href;
+              const text = link.textContent?.trim() || 'Unknown';
+              clickedUrls.push({ text: text.substring(0, 30), href });
+              results.push(`CTA Link "${text.substring(0, 30)}..." found: ${href}`);
+            } catch (e) {
+              results.push(`CTA Link ${index + 1} test failed: ${e.message}`);
+            }
+          }
+        });
+        
+        return { results, clickedUrls };
+      });
+      
+      console.log('CTA test results:', ctaTests.results);
+      results.details.ctaTests = ctaTests.results;
+      results.details.ctaUrls = ctaTests.clickedUrls;
+    }
     
     // Check tracking pixels
     const hasTracking = await page.evaluate(() => {
