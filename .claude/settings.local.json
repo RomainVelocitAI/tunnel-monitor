@@ -57,7 +57,9 @@
       "mcp__github__create_or_update_file",
       "Bash(env)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "mcp__github__get_file_contents",
+      "mcp__github__get_job_logs"
     ],
     "deny": []
   }

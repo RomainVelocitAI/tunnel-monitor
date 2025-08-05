@@ -218,9 +218,14 @@ async function runTest() {
     results.details.performance = metrics;
     results.details.tracking = hasTracking;
     
+    // Test completed successfully (page loaded and analyzed)
+    // The status should remain 'success' as set earlier
+    
   } catch (error) {
     console.error('Test error:', error);
     results.error = error.message;
+    // Only set to error if there was an actual error
+    results.status = 'error';
   } finally {
     if (browser) {
       await browser.close();
