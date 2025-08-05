@@ -1,0 +1,53 @@
+name: Tunnel Test Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      tunnel_id:
+        description: 'Tunnel ID to test'
+        required: true
+      tunnel_name:
+        description: 'Tunnel name'
+        required: true
+      tunnel_url:
+        description: 'Tunnel URL to test'
+        required: true
+      callback_url:
+        description: 'Webhook URL for results'
+        required: true
+
+jobs:
+  test-tunnel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm install puppeteer
+        
+    - name: Run tunnel test
+      id: test
+      run: |
+        node .github/scripts/tunnel-test.js
+      env:
+        TUNNEL_ID: ${{ github.event.inputs.tunnel_id }}
+        TUNNEL_NAME: ${{ github.event.inputs.tunnel_name }}
+        TUNNEL_URL: ${{ github.event.inputs.tunnel_url }}
+        CALLBACK_URL: ${{ github.event.inputs.callback_url }}
+        
+    - name: Upload screenshot
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-screenshot
+        path: screenshot-*.png
+        retention-days: 7
