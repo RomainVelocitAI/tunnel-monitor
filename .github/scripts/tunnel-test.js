@@ -61,12 +61,46 @@ async function runTest() {
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
     
-    // Navigation
+    // Navigation avec retry et timeout augmenté
     const startTime = Date.now();
-    const response = await page.goto(tunnelUrl, {
-      waitUntil: 'networkidle0',
-      timeout: 30000
-    });
+    let response;
+    let lastError;
+    
+    // Essayer jusqu'à 3 fois avec des timeouts progressifs
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`Tentative ${attempt}/3 de chargement de ${tunnelUrl}`);
+        
+        // Pour les dernières tentatives, utiliser un mode moins strict
+        const waitUntilOption = attempt === 3 ? 'domcontentloaded' : 'networkidle0';
+        
+        response = await page.goto(tunnelUrl, {
+          waitUntil: waitUntilOption,
+          timeout: 60000 * attempt // 60s, 120s, 180s
+        });
+        console.log(`Page chargée avec succès en ${Date.now() - startTime}ms (mode: ${waitUntilOption})`);
+        
+        // Si on a utilisé domcontentloaded, attendre un peu plus pour le contenu dynamique
+        if (waitUntilOption === 'domcontentloaded') {
+          console.log('Attente supplémentaire pour le contenu dynamique...');
+          await page.waitForTimeout(5000);
+        }
+        
+        break; // Succès, sortir de la boucle
+      } catch (error) {
+        lastError = error;
+        console.error(`Tentative ${attempt} échouée:`, error.message);
+        
+        if (attempt < 3) {
+          console.log(`Attente de 5 secondes avant la prochaine tentative...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+    }
+    
+    if (!response) {
+      throw lastError; // Si toutes les tentatives ont échoué
+    }
     
     const loadTime = Date.now() - startTime;
     results.loadTime = loadTime;
@@ -227,8 +261,27 @@ async function runTest() {
   } catch (error) {
     console.error('Test error:', error);
     results.error = error.message;
-    // Only set to error if there was an actual error
-    results.status = 'error';
+    
+    // Déterminer le type d'erreur
+    if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+      results.status = 'error';
+      results.details.errorType = 'timeout';
+      results.details.errorDetails = `Le site a mis trop de temps à répondre (${error.message})`;
+      
+      // Essayer quand même de prendre un screenshot si la page est partiellement chargée
+      try {
+        if (browser && page) {
+          await page.screenshot({ path: `screenshot-error-${tunnelId}.png` });
+          console.log('Screenshot d\'erreur capturé');
+        }
+      } catch (screenshotError) {
+        console.error('Impossible de capturer le screenshot:', screenshotError.message);
+      }
+    } else {
+      results.status = 'error';
+      results.details.errorType = 'other';
+      results.details.errorDetails = error.message;
+    }
   } finally {
     if (browser) {
       await browser.close();

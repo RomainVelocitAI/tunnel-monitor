@@ -62,7 +62,8 @@
       "mcp__github__get_job_logs",
       "Bash(npm run logs:*)",
       "mcp__github__list_workflow_runs",
-      "mcp__airtable-mcp__search_records"
+      "mcp__airtable-mcp__search_records",
+      "mcp__github__list_workflow_jobs"
     ],
     "deny": []
   }
