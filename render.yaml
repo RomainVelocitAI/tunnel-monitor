@@ -1,12 +1,12 @@
 services:
   - type: web
     name: tunnel-monitor-api
-    runtime: node
+    runtime: docker
     repo: https://github.com/RomainVelocitAI/tunnel-monitor
     branch: main
     rootDir: tunnel-monitor-backend
-    buildCommand: npm ci --omit=dev
-    startCommand: ./start.sh
+    dockerfilePath: ./tunnel-monitor-backend/Dockerfile
+    dockerContext: ./tunnel-monitor-backend
     envVars:
       - key: NODE_ENV
         value: production

@@ -51,7 +51,8 @@ class TestStreamServicePuppeteer {
           '--disable-web-security',
           '--disable-features=IsolateOrigins,site-per-process',
           '--disable-site-isolation-trials'
-        ]
+        ],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
       };
       
       browser = await puppeteer.launch(launchOptions);
