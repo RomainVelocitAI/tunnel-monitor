@@ -140,9 +140,10 @@ async function runTest() {
     // Check forms with better selectors
     const formData = await page.evaluate(() => {
       const forms = document.querySelectorAll('form');
-      const emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
-      const textInputs = document.querySelectorAll('input[type="text"], input[name*="name"], input[name*="nom"], input[placeholder*="nom"]');
-      const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], button[class*="submit"], button[class*="send"]');
+      const emailInputs = document.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"], input[placeholder*="email"]');
+      const textInputs = document.querySelectorAll('input[type="text"], input[name*="name"], input[name*="nom"], input[placeholder*="nom"], input[placeholder*="name"]');
+      const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"], button[class*="submit"], button[class*="send"], button[class*="envoyer"]');
+      const textareas = document.querySelectorAll('textarea');
       
       // Look for contact forms specifically
       const contactForms = Array.from(document.querySelectorAll('*')).filter(el => {
@@ -154,16 +155,24 @@ async function runTest() {
                el.querySelector('input, textarea');
       });
       
+      // Recherche élargie pour VelocitAI
+      const allInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"])');
+      const phoneInputs = document.querySelectorAll('input[type="tel"], input[name*="phone"], input[name*="tel"], input[placeholder*="téléphone"]');
+      
       return {
         formsCount: forms.length,
         emailInputsCount: emailInputs.length,
         textInputsCount: textInputs.length,
         submitButtonsCount: submitButtons.length,
         contactFormsCount: contactForms.length,
-        hasInputFields: emailInputs.length > 0 || textInputs.length > 0
+        textareasCount: textareas.length,
+        phoneInputsCount: phoneInputs.length,
+        allInputsCount: allInputs.length,
+        hasInputFields: emailInputs.length > 0 || textInputs.length > 0 || textareas.length > 0
       };
     });
     
+    console.log('Form detection results:', formData);
     results.formsValid = formData.formsCount > 0 || formData.hasInputFields;
     results.details.forms = formData;
     
@@ -249,7 +258,13 @@ async function runTest() {
     if (hasTracking.linkedIn) results.trackingPixels.push('LinkedIn Insight');
     
     // Take screenshot
-    await page.screenshot({ path: `screenshot-${tunnelId}.png`, fullPage: false });
+    const screenshotPath = `screenshot-${tunnelId}.png`;
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+    console.log(`Screenshot saved as ${screenshotPath}`);
+    
+    // Add screenshot info to results
+    results.screenshotPath = screenshotPath;
+    results.screenshotUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
     
     results.details.performance = metrics;
     results.details.tracking = hasTracking;
@@ -273,8 +288,11 @@ async function runTest() {
       // Essayer quand même de prendre un screenshot si la page est partiellement chargée
       try {
         if (browser && page) {
-          await page.screenshot({ path: `screenshot-error-${tunnelId}.png` });
+          const errorScreenshotPath = `screenshot-${tunnelId}.png`;
+          await page.screenshot({ path: errorScreenshotPath });
           console.log('Screenshot d\'erreur capturé');
+          results.screenshotPath = errorScreenshotPath;
+          results.screenshotUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
         }
       } catch (screenshotError) {
         console.error('Impossible de capturer le screenshot:', screenshotError.message);

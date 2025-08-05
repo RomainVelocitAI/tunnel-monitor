@@ -88,7 +88,9 @@ class AirtableService {
           // NOUVELLES DONNÉES CRITIQUES
           'Performance_Score': testResult.performanceScore || 0,
           'Performance_Metrics': JSON.stringify(testResult.details?.performance || testResult.details?.performanceMetrics || {}),
-          'Tracking_Pixels_Details': JSON.stringify(testResult.trackingPixels || [])
+          'Tracking_Pixels_Details': JSON.stringify(testResult.trackingPixels || []),
+          // Screenshot URL si disponible
+          'Screenshot_URL': testResult.screenshotUrl || ''
         }
       };
 
