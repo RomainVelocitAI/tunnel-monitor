@@ -54,6 +54,7 @@ class AirtableService {
       let airtableStatus = 'OK'; // Valeur par défaut
       switch(testResult.status) {
         case 'success':
+        case 'pending': // Traiter pending comme success
           airtableStatus = 'OK';
           break;
         case 'warning':

@@ -42,7 +42,7 @@ async function runTest() {
     tunnelName,
     url: tunnelUrl,
     timestamp: new Date().toISOString(),
-    status: 'error',
+    status: 'pending',
     performanceScore: 0,
     loadTime: 0,
     formsValid: false,
@@ -219,7 +219,10 @@ async function runTest() {
     results.details.tracking = hasTracking;
     
     // Test completed successfully (page loaded and analyzed)
-    // The status should remain 'success' as set earlier
+    // Set status to success if not already set by response.ok()
+    if (results.status === 'pending') {
+      results.status = 'success';
+    }
     
   } catch (error) {
     console.error('Test error:', error);
