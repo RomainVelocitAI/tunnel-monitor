@@ -44,19 +44,19 @@ router.post('/github-test-result', async (req, res) => {
         }
       })}\n\n`);
       
-      if (results.details && results.details.forms && results.details.forms.length > 0) {
+      if (results.details && results.details.forms && results.details.forms.formsCount > 0) {
         sseRes.write(`data: ${JSON.stringify({
           type: 'log',
           level: 'success',
-          message: `${results.details.forms.length} formulaire(s) trouvé(s)`
+          message: `${results.details.forms.formsCount} formulaire(s) trouvé(s)`
         })}\n\n`);
       }
       
-      if (results.details && results.details.ctas && results.details.ctas.length > 0) {
+      if (results.details && results.details.ctas && results.details.ctas.total > 0) {
         sseRes.write(`data: ${JSON.stringify({
           type: 'log',
           level: 'success',
-          message: `${results.details.ctas.length} CTA(s) détecté(s)`
+          message: `${results.details.ctas.total} CTA(s) détecté(s)`
         })}\n\n`);
       }
       
